@@ -4,6 +4,7 @@ enum AppPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
     case iphone
     case ipad
     case mac
+    case tv
 
     var id: String { rawValue }
 
@@ -15,6 +16,8 @@ enum AppPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
             return "iPad"
         case .mac:
             return "Mac"
+        case .tv:
+            return "Apple TV"
         }
     }
 
@@ -26,6 +29,8 @@ enum AppPlatform: String, Codable, CaseIterable, Identifiable, Sendable {
             return "ipad"
         case .mac:
             return "desktop"
+        case .tv:
+            return "tv"
         }
     }
 }

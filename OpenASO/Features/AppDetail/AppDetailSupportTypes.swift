@@ -133,6 +133,8 @@ enum PlatformFilter: Identifiable, Equatable, Hashable, CaseIterable {
             return "ipad"
         case .platform(.mac):
             return "macbook"
+        case .platform(.tv):
+            return "appletv"
         }
     }
 

@@ -72,13 +72,70 @@ struct AppStoreWebRankingProviderTests {
         returnedPlatforms.append(try await provider.search(
             keyword: "notes", storefrontCode: "us", platform: .mac, limit: 1
         ).items[0].platform)
+        returnedPlatforms.append(try await provider.search(
+            keyword: "notes", storefrontCode: "us", platform: .tv, limit: 1
+        ).items[0].platform)
 
         #expect(requestedPaths == [
             "/us/iphone/search",
             "/us/ipad/search",
             "/us/mac/search",
+            "/us/tv/search",
         ])
-        #expect(returnedPlatforms == [.iphone, .ipad, .mac])
+        #expect(returnedPlatforms == [.iphone, .ipad, .mac, .tv])
+    }
+
+    @Test
+    func parsesAppleTVScreenshotsFromTVSearch() async throws {
+        let client = MockHTTPClient { request in
+            let url = try #require(request.url)
+            return (Self.tvFixture, makeHTTPURLResponse(url: url, statusCode: 200))
+        }
+        let provider = AppStoreWebRankingProvider(httpClient: client)
+
+        let page = try await provider.search(
+            keyword: "art", storefrontCode: "us", platform: .tv, limit: 1
+        )
+
+        #expect(page.items.map(\.appStoreID) == [6502263712])
+        #expect(page.items[0].platform == .tv)
+        #expect(page.items[0].screenshotURLs.isEmpty)
+        #expect(page.items[0].appletvScreenshotURLs == ["https://example.com/tv/1920x1080bb.jpg"])
+    }
+
+    @Test
+    func tvSearchWithoutNextPageKeepsRenderedResults() async throws {
+        let client = MockHTTPClient { request in
+            let url = try #require(request.url)
+            return (Self.tvFixture, makeHTTPURLResponse(url: url, statusCode: 200))
+        }
+        let provider = AppStoreWebRankingProvider(httpClient: client)
+
+        let page = try await provider.search(
+            keyword: "art", storefrontCode: "us", platform: .tv, limit: 200
+        )
+
+        #expect(page.items.map(\.appStoreID) == [6502263712])
+    }
+
+    @Test
+    func tvPrimaryFailureSkipsTheITunesFallback() async throws {
+        let primary = ScriptedRankingProvider(behavior: .httpStatus(503))
+        let fallback = ScriptedRankingProvider(behavior: .page(Self.fallbackPage))
+        let provider = PrimaryFallbackSearchRankingProvider(primary: primary, fallback: fallback)
+
+        do {
+            _ = try await provider.search(keyword: "art", storefrontCode: "us", platform: .tv, limit: 10)
+            Issue.record("Expected the tv fallback to be skipped.")
+        } catch let error as SearchRankingProviderError {
+            guard case .fallbackUnavailable(let platform, _) = error else {
+                Issue.record("Expected fallbackUnavailable, received \(error).")
+                return
+            }
+            #expect(platform == .tv)
+        }
+
+        #expect(await fallback.callCount == 0)
     }
 
     @Test
@@ -542,6 +599,12 @@ struct AppStoreWebRankingProviderTests {
         </script>
         """.utf8)
     }
+
+    private static let tvFixture = Data("""
+    <script type="application/json" id="serialized-server-data">
+    {"data":[{"intent":{"term":"art","storefront":"us","platform":"tv","$kind":"SearchResultsPageIntent"},"data":{"$kind":"SearchResultsPage","shelves":[{"id":"SearchResults.shelfId","$kind":"Shelf","contentType":"searchResult","items":[{"$kind":"AppSearchResult","resultType":"content","lockup":{"adamId":"6502263712","title":"Masterpiece: Gallery of Art","screenshots":[{"artwork":[{"template":"https://example.com/tv/{w}x{h}{c}.{f}","width":1920,"height":1080}],"mediaPlatform":{"appPlatform":"tv"}}]}}]}]}}]}
+    </script>
+    """.utf8)
 
     private static let orderedFixture = Data("""
     <html><script type="application/json" id="serialized-server-data">

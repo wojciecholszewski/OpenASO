@@ -146,6 +146,8 @@ final class AppStoreWebRankingProvider: SearchRankingProvider {
             "ipad"
         case .mac:
             "mac"
+        case .tv:
+            "tv"
         }
     }
 
@@ -242,6 +244,7 @@ final class AppStoreWebRankingProvider: SearchRankingProvider {
                     iconURLString: artworkURLString(from: lockup.icon, width: 100, height: 100),
                     screenshotURLs: screenshots.iphone,
                     ipadScreenshotURLs: screenshots.ipad,
+                    appletvScreenshotURLs: screenshots.tv,
                     ratingCount: ratingCount(from: lockup.ratingCount),
                     averageRating: lockup.rating,
                     platform: request.platform
@@ -262,6 +265,11 @@ final class AppStoreWebRankingProvider: SearchRankingProvider {
         }
 
         guard page.hasNextPageField else {
+            // The tv search page renders only its first shelf of results and
+            // has no fallback provider, so keep the visible ranks.
+            if request.platform == .tv {
+                return .complete(items)
+            }
             throw SearchRankingProviderError.responseFailure(.pageShapeChanged)
         }
         guard let nextPage = page.nextPage else {
@@ -339,9 +347,10 @@ final class AppStoreWebRankingProvider: SearchRankingProvider {
 
     private static func screenshotURLs(
         from groups: [SearchResultsLockup.Screenshots]?
-    ) -> (iphone: [String], ipad: [String]) {
+    ) -> (iphone: [String], ipad: [String], tv: [String]) {
         var iphone: [String] = []
         var ipad: [String] = []
+        var tv: [String] = []
 
         for group in groups ?? [] {
             let urls = deduplicated(group.artwork.compactMap {
@@ -352,12 +361,14 @@ final class AppStoreWebRankingProvider: SearchRankingProvider {
                 iphone.append(contentsOf: urls)
             case "pad":
                 ipad.append(contentsOf: urls)
+            case "tv":
+                tv.append(contentsOf: urls)
             default:
                 continue
             }
         }
 
-        return (deduplicated(iphone), deduplicated(ipad))
+        return (deduplicated(iphone), deduplicated(ipad), deduplicated(tv))
     }
 
     private static func artworkURLString(

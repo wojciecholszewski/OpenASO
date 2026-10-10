@@ -17,6 +17,9 @@ final class PrimaryFallbackSearchRankingProvider: SearchRankingProvider {
             switch platform {
             case .iphone, .ipad, .mac:
                 true
+            case .tv:
+                // iTunes Search returns no results for tvSoftware.
+                false
             }
         }
     }

@@ -368,6 +368,8 @@ private extension AppPlatform {
             return "ipad"
         case .mac:
             return "macbook"
+        case .tv:
+            return "appletv"
         }
     }
 }

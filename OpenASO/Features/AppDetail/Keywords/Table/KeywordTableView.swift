@@ -706,6 +706,8 @@ private extension AppPlatform {
             return "ipad"
         case .mac:
             return "macbook"
+        case .tv:
+            return "appletv"
         }
     }
 
@@ -717,6 +719,8 @@ private extension AppPlatform {
             return 1
         case .mac:
             return 2
+        case .tv:
+            return 3
         }
     }
 }

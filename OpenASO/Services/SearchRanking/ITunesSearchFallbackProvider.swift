@@ -54,6 +54,8 @@ enum ITunesRankingSupport {
             "iPadSoftware"
         case .mac:
             "macSoftware"
+        case .tv:
+            "tvSoftware"
         }
     }
 

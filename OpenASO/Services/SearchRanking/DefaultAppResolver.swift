@@ -109,7 +109,14 @@ private struct ITunesAppPayload: Decodable {
             screenshotURLs: screenshotUrls ?? [],
             ipadScreenshotURLs: ipadScreenshotUrls ?? [],
             appletvScreenshotURLs: appletvScreenshotUrls ?? [],
-            defaultPlatform: .iphone
+            defaultPlatform: defaultPlatform
         )
+    }
+
+    private var defaultPlatform: AppPlatform {
+        let isTVOnly = (screenshotUrls ?? []).isEmpty
+            && (ipadScreenshotUrls ?? []).isEmpty
+            && !(appletvScreenshotUrls ?? []).isEmpty
+        return isTVOnly ? .tv : .iphone
     }
 }
